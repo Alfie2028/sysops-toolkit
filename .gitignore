@@ -1,0 +1,24 @@
+# 日志目录
+logs/
+*.log
+
+# 报告输出
+reports/
+*.html
+
+# 归档
+logs/archive/
+
+# 临时文件
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
