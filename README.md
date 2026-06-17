@@ -7,6 +7,7 @@
 ## 模块架构
 
 ```
+```
 sysops-toolkit/
 ├── sysops.sh              # 主入口（模块五：主控调度中心）
 ├── lib/
