@@ -1,0 +1,21 @@
+[2026-06-13 22:33:29] [INFO] =========================================
+[2026-06-13 22:33:29] [INFO] Linux 系统运维工具箱 v1.0 启动
+[2026-06-13 22:33:29] [INFO] 运行环境: Linux Alfie 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+[2026-06-13 22:33:29] [INFO] =========================================
+[2026-06-13 22:33:52] [INFO] 用户活动追踪完成
+[2026-06-13 22:34:05] [INFO] 收到退出信号，正在清理...
+[2026-06-13 22:34:05] [INFO] 清理完成，退出。
+[2026-06-13 22:34:08] [INFO] =========================================
+[2026-06-13 22:34:08] [INFO] Linux 系统运维工具箱 v1.0 启动
+[2026-06-13 22:34:08] [INFO] 运行环境: Linux Alfie 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+[2026-06-13 22:34:08] [INFO] =========================================
+[2026-06-13 22:34:39] [INFO] 收到退出信号，正在清理...
+[2026-06-13 22:34:39] [INFO] 清理完成，退出。
+[2026-06-13 22:34:42] [INFO] =========================================
+[2026-06-13 22:34:42] [INFO] Linux 系统运维工具箱 v1.0 启动
+[2026-06-13 22:34:42] [INFO] 运行环境: Linux Alfie 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+[2026-06-13 22:34:42] [INFO] =========================================
+[2026-06-13 22:34:47] [INFO] 正在生成 HTML 巡检报告...
+[2026-06-13 22:34:47] [INFO] HTML 报告已生成: /mnt/e/Claude Code/projects/sysops-toolkit/reports/sysops_report_20260613_223447.html
+[2026-06-13 22:34:47] [WARN] pandoc 未安装，跳过 PDF 生成 (sudo apt install pandoc)
+[2026-06-13 22:34:47] [INFO] HTML 报告已生成: /mnt/e/Claude Code/projects/sysops-toolkit/reports/sysops_report_20260613_223447.html

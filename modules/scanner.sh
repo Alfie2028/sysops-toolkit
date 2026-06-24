@@ -87,9 +87,8 @@ dir_usage_scan() {
 # ============================================================
 
 large_file_scan() {
-    local size_threshold="${1:-${LARGE_FILE_SIZE:-+100M}}"
-    local scan_path="${2:-/}"
-    local top_n="${3:-20}"
+    local size_threshold="${LARGE_FILE_SIZE:-+100M}"
+    local scan_path="${1:-/}"
 
     echo "🔍 扫描路径: $scan_path"
     echo "📏 大小阈值: $size_threshold"
@@ -99,12 +98,11 @@ large_file_scan() {
     printf "│ %12s │ %-48s │\n" "文件大小" "路径"
     echo "├──────────────┼──────────────────────────────────────────────────┤"
 
-    # 排除 /proc, /sys, /dev (虚拟文件系统)
     find "$scan_path" -type f -size "$size_threshold" \
         -not -path "/proc/*" -not -path "/sys/*" -not -path "/dev/*" \
         -exec ls -lh {} \; 2>/dev/null | \
         awk '{printf "│ %12s │ %-48s │\n", $5, $NF}' | \
-        sort -t'│' -k2 -rh 2>/dev/null | head -"$top_n"
+        sort -t'│' -k2 -rh 2>/dev/null | head -20
 
     echo "└──────────────┴──────────────────────────────────────────────────┘"
 
@@ -118,8 +116,8 @@ large_file_scan() {
 # ============================================================
 
 old_file_scan() {
-    local mtime="${1:-${OLD_FILE_MTIME:-+30}}"
-    local scan_path="${2:-/var/log}"
+    local mtime="${OLD_FILE_MTIME:-+30}"
+    local scan_path="${1:-/var/log}"
 
     echo "🔍 扫描路径: $scan_path"
     echo "📅 修改时间阈值: ${mtime} 天前"
@@ -135,12 +133,8 @@ old_file_scan() {
 
     echo "  找到 ${COLOR_YELLOW}${count}${COLOR_RESET} 个旧文件:"
     echo ""
-
-    # 列表展示
     echo "$old_files" | head -20 | while read -r f; do
-        local sz=$(ls -lh "$f" 2>/dev/null | awk '{print $5}')
-        local mt=$(stat -c %y "$f" 2>/dev/null | cut -d. -f1)
-        printf "  %12s  %s  %s\n" "$sz" "$mt" "$f"
+        ls -lh "$f" 2>/dev/null | awk '{printf "  %12s  %s %s %s  %s\n", $5, $6, $7, $8, $NF}'
     done
 
     if [[ $count -gt 20 ]]; then
@@ -148,7 +142,7 @@ old_file_scan() {
     fi
 
     echo ""
-    if confirm "是否进入交互式删除模式？(将逐个确认)"; then
+    if confirm "是否进入交互式删除模式？"; then
         local deleted=0
         echo "$old_files" | while read -r f; do
             [[ -z "$f" ]] && continue
@@ -248,14 +242,3 @@ run_scanner() {
     log_info "文件系统扫描完成"
 }
 
-scanner_snapshot() {
-    local disk_pct=$(df / --output=pcent 2>/dev/null | tail -1 | tr -d ' %')
-    echo "DISK_USAGE=${disk_pct:-0}"
-    local large_count=$(find / -type f -size "${LARGE_FILE_SIZE:-+100M}" \
-        -not -path "/proc/*" -not -path "/sys/*" -not -path "/dev/*" 2>/dev/null | wc -l)
-    echo "LARGE_FILES=${large_count// /}"
-}
-
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    run_scanner
-fi

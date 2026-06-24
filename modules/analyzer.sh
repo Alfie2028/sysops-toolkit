@@ -86,61 +86,19 @@ log_classify() {
 
     echo "  └──────────┴────────┴──────────────┘"
 
-    # --- 提取 Top 主机名 ---
-    echo ""
-    echo "  🖥️  日志来源主机 Top 10 (syslog 格式):"
-    # syslog: "Mon DD HH:MM:SS hostname service[PID]: message"
-    awk '{
+    # 简要提取主机名和服务名（各取前5）
+    local hosts=$(awk '{
         for(i=1;i<=NF;i++) {
-            if($i~/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/ && i<NF) {
-                host=$(i+1)
-                if(host!="" && host!~/^\[/) { hosts[host]++ }
-                break
-            }
+            if($i~/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/ && i<NF) { h=$(i+1); if(h!="" && h!~/^\[/) hosts[h]++ } break
         }
-    }
-    END {
-        for(h in hosts) print hosts[h], h
-    }' "$logfile" 2>/dev/null | sort -rn | head -10 | \
-        awk '{printf "    %-20s  %s 条\n", $2, $1}'
-
-    # --- 提取 Top 服务名 ---
-    echo ""
-    echo "  ⚙️  服务/进程 Top 10:"
-    awk '{
+    } END { for(h in hosts) print h }' "$logfile" 2>/dev/null | head -5 | tr '\n' ' ')
+    local svcs=$(awk '{
         for(i=1;i<=NF;i++) {
-            # 匹配 service[PID]: 模式
-            if($i~/^[a-zA-Z_-]+\[[0-9]+\]:?$/) {
-                svc=$i
-                sub(/\[[0-9]+\].*/, "", svc)
-                if(svc!="") services[svc]++
-                break
-            }
+            if($i~/^[a-zA-Z_-]+\[[0-9]+\]:?$/) { s=$i; sub(/\[[0-9]+\].*/, "", s); if(s!="") services[s]++ } break
         }
-    }
-    END {
-        for(s in services) print services[s], s
-    }' "$logfile" 2>/dev/null | sort -rn | head -10 | \
-        awk '{printf "    %-25s  %s 条\n", $2, $1}'
-
-    # --- 按小时分布 ---
-    echo ""
-    echo "  ⏰ 时间分布 (按小时):"
-    echo "  ┌──────┬────────┬──────────────────────────────────────────┐"
-    printf "  │ %4s │ %6s │ %-40s │\n" "小时" "数量" "分布"
-    echo "  ├──────┼────────┼──────────────────────────────────────────┤"
-
-    grep -oE '[0-9]{2}:[0-9]{2}:[0-9]{2}' "$logfile" 2>/dev/null | \
-        cut -d: -f1 | sort | uniq -c | sort -k2 -n | head -24 | \
-        while read -r cnt hour; do
-            local bar_len=$(( cnt * 40 / (total_lines / 24 + 1) ))
-            [[ $bar_len -gt 40 ]] && bar_len=40
-            local bar=""
-            for ((i=0; i<bar_len; i++)); do bar+="█"; done
-            printf "  │ %4s │ %6s │ %-40s │\n" "$hour" "$cnt" "$bar"
-        done
-
-    echo "  └──────┴────────┴──────────────────────────────────────────┘"
+    } END { for(s in services) print s }' "$logfile" 2>/dev/null | head -5 | tr '\n' ' ')
+    echo "  🖥️  来源主机: ${hosts:-无}"
+    echo "  ⚙️  涉及服务: ${svcs:-无}"
 }
 
 # ============================================================
@@ -149,8 +107,8 @@ log_classify() {
 
 log_rotate() {
     local log_dir="${1:-/var/log}"
-    local days="${2:-${LOG_RETENTION_DAYS:-7}}"
-    local archive_dir="${3:-${SCRIPT_DIR:-.}/${LOG_ARCHIVE_DIR:-./logs/archive}}"
+    local days="${LOG_RETENTION_DAYS:-7}"
+    local archive_dir="${SCRIPT_DIR:-.}/logs/archive"
 
     mkdir -p "$archive_dir"
 
@@ -189,66 +147,18 @@ log_rotate() {
 }
 
 # ============================================================
-# 日志搜索
-# ============================================================
-
-log_search() {
-    local logfile="$1"
-    local pattern="$2"
-    local context="${3:-0}"
-
-    if [[ ! -f "$logfile" ]]; then
-        log_error "日志文件不存在: $logfile"
-        return 1
-    fi
-
-    echo "🔍 搜索: \"$pattern\" 于 $logfile"
-    echo ""
-
-    if [[ $context -gt 0 ]]; then
-        grep -n -C "$context" "$pattern" "$logfile" 2>/dev/null | head -50
-    else
-        grep -n "$pattern" "$logfile" 2>/dev/null | head -50
-    fi
-
-    local total=$(grep -c "$pattern" "$logfile" 2>/dev/null || echo 0)
-    echo ""
-    echo "  共匹配 ${COLOR_BOLD}${total}${COLOR_RESET} 条"
-}
-
-# ============================================================
 # 一键分析
 # ============================================================
 
 run_analyzer() {
     print_header "模块四：日志分析引擎"
 
-    echo "可选日志文件:"
-    echo "  1) /var/log/syslog     (系统主日志)"
-    echo "  2) /var/log/auth.log   (认证日志)"
-    echo "  3) /var/log/kern.log   (内核日志)"
-    echo "  4) /var/log/dpkg.log   (软件包日志)"
-    echo "  5) 自定义路径"
-    echo ""
+    # 自动检测系统日志
+    local target_log="/var/log/syslog"
+    [[ ! -f "$target_log" ]] && target_log="/var/log/messages"
+    [[ ! -f "$target_log" ]] && { log_error "未找到系统日志文件"; return 1; }
 
-    local choice
-    read -r -p "请选择 [1-5]: " choice
-
-    local target_log=""
-    case "$choice" in
-        1) target_log="/var/log/syslog" ;;
-        2) target_log="/var/log/auth.log" ;;
-        3) target_log="/var/log/kern.log" ;;
-        4) target_log="/var/log/dpkg.log" ;;
-        5) read -r -p "输入日志路径: " target_log ;;
-        *) target_log="/var/log/syslog" ;;
-    esac
-
-    [[ ! -f "$target_log" ]] && {
-        log_error "日志文件不存在: $target_log"
-        return 1
-    }
-
+    echo "  日志文件: $target_log"
     echo ""
 
     section "📊 日志分类统计"
@@ -259,24 +169,7 @@ run_analyzer() {
         log_watch "$target_log" "ERROR|FAIL|CRITICAL|WARN"
     fi
 
-    echo ""
-    if confirm "是否执行日志归档？"; then
-        log_rotate "/var/log" "${LOG_RETENTION_DAYS:-7}"
-    fi
-
     print_footer
     log_info "日志分析完成"
 }
 
-analyzer_snapshot() {
-    local syslog="/var/log/syslog"
-    [[ ! -f "$syslog" ]] && syslog="/var/log/messages"
-    if [[ -f "$syslog" ]]; then
-        echo "SYSLOG_LINES=$(wc -l < "$syslog" 2>/dev/null || echo 0)"
-        echo "SYSLOG_ERRORS=$(grep -ciE "ERROR|CRITICAL|FATAL" "$syslog" 2>/dev/null || echo 0)"
-    fi
-}
-
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    run_analyzer
-fi

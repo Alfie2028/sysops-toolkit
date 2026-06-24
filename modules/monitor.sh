@@ -232,18 +232,3 @@ run_monitor() {
     log_info "系统性能监控完成"
 }
 
-# 获取监控数据（JSON-like 输出，供主控脚本采集）
-monitor_snapshot() {
-    local cpu_val=$(cpu_usage)
-    read -r mt mu ma mp st su sf sp <<< "$(mem_info)"
-    echo "CPU_USAGE=$cpu_val"
-    echo "MEM_USAGE=$mp"
-    echo "SWAP_USAGE=$sp"
-    echo "LOAD1=$(awk '{print $1}' /proc/loadavg)"
-    echo "PROCS=$(ps aux --no-headers | wc -l)"
-}
-
-# 如果直接运行此脚本
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    run_monitor
-fi
